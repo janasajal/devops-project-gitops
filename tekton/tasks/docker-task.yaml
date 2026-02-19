@@ -9,8 +9,6 @@ spec:
       type: string
   workspaces:
     - name: source
-    - name: dockerconfig
-      mountPath: /kaniko/.docker
   steps:
     - name: build-and-push
       image: gcr.io/kaniko-project/executor:latest
@@ -22,3 +20,13 @@ spec:
         - "--destination=janasajal/gitops-app:latest"
         - "--insecure"
         - "--skip-tls-verify"
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: kaniko-secret
+        items:
+          - key: config.json
+            path: config.json

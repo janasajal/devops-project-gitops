@@ -10,7 +10,6 @@ spec:
       default: "latest"
   workspaces:
     - name: shared-workspace
-    - name: dockerconfig
   tasks:
     - name: maven-build
       taskRef:
@@ -39,15 +38,13 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
-        - name: dockerconfig
-          workspace: dockerconfig
       params:
         - name: IMAGE_TAG
           value: $(params.IMAGE_TAG)
 
-    - name: update-helm-values
+    - name: deploy-dev
       taskRef:
-        name: update-helm-values
+        name: deploy-to-env
       runAfter:
         - docker-build-push
       workspaces:
@@ -56,3 +53,30 @@ spec:
       params:
         - name: IMAGE_TAG
           value: $(params.IMAGE_TAG)
+        - name: ENVIRONMENT
+          value: "dev"
+
+    - name: manual-approval
+      taskRef:
+        name: manual-approval
+      runAfter:
+        - deploy-dev
+      params:
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)
+        - name: TIMEOUT
+          value: "600"
+
+    - name: deploy-prod
+      taskRef:
+        name: deploy-to-env
+      runAfter:
+        - manual-approval
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)
+        - name: ENVIRONMENT
+          value: "prod"

@@ -1,0 +1,64 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: manual-approval
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: IMAGE_TAG
+      type: string
+    - name: TIMEOUT
+      type: string
+      default: "600"
+  steps:
+    - name: wait-for-approval
+      image: bitnami/kubectl:latest
+      script: |
+        #!/bin/bash
+        echo "================================================"
+        echo "⏸️  PRODUCTION DEPLOYMENT - MANUAL APPROVAL REQUIRED"
+        echo "================================================"
+        echo "📦 Image: janasajal/gitops-app:$(params.IMAGE_TAG)"
+        echo "🌍 Target: PRODUCTION namespace"
+        echo ""
+        echo "✅ To APPROVE production deployment run:"
+        echo "kubectl patch configmap pipeline-approval -n tekton-pipelines --type merge -p '{\"data\":{\"status\":\"approved\"}}'"
+        echo ""
+        echo "❌ To REJECT production deployment run:"
+        echo "kubectl patch configmap pipeline-approval -n tekton-pipelines --type merge -p '{\"data\":{\"status\":\"rejected\"}}'"
+        echo "================================================"
+
+        # Reset to pending
+        kubectl patch configmap pipeline-approval \
+          -n tekton-pipelines \
+          --type merge \
+          -p '{"data":{"status":"pending"}}' 2>/dev/null || \
+        kubectl create configmap pipeline-approval \
+          -n tekton-pipelines \
+          --from-literal=status=pending
+
+        TIMEOUT=$(params.TIMEOUT)
+        ELAPSED=0
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(kubectl get configmap pipeline-approval \
+            -n tekton-pipelines \
+            -o jsonpath='{.data.status}')
+
+          echo "⏳ Awaiting approval... [$STATUS] (${ELAPSED}s / ${TIMEOUT}s)"
+
+          if [ "$STATUS" = "approved" ]; then
+            echo "✅ APPROVED! Deploying to production..."
+            exit 0
+          fi
+
+          if [ "$STATUS" = "rejected" ]; then
+            echo "❌ REJECTED! Production deployment cancelled."
+            exit 1
+          fi
+
+          sleep 15
+          ELAPSED=$((ELAPSED + 15))
+        done
+
+        echo "⏰ Timed out after ${TIMEOUT}s - deployment cancelled"
+        exit 1

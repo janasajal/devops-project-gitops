@@ -14,6 +14,8 @@ spec:
       image: alpine/git
       workingDir: $(workspaces.source.path)
       script: |
+        #!/bin/sh
+        rm -rf ./* ./.* 2>/dev/null || true
         git clone https://github.com/janasajal/devops-project-gitops.git .
         echo "✅ Repo cloned successfully"
 
@@ -21,5 +23,6 @@ spec:
       image: maven:3.9.5-eclipse-temurin-17
       workingDir: $(workspaces.source.path)/app
       script: |
+        #!/bin/sh
         mvn clean package -DskipTests
         echo "✅ Maven build successful"

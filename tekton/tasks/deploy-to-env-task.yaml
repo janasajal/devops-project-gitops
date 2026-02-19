@@ -1,43 +1,42 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: update-helm-values
+  name: deploy-to-env
   namespace: tekton-pipelines
 spec:
   params:
     - name: IMAGE_TAG
       type: string
+    - name: ENVIRONMENT
+      type: string
   workspaces:
     - name: source
   steps:
-    - name: update-values
+    - name: update-helm-values
       image: alpine/git
       workingDir: $(workspaces.source.path)
       script: |
         #!/bin/sh
-        # Setup SSH with writable copy
         mkdir -p /tmp/.ssh
         cp /ssh-key/ssh-privatekey /tmp/.ssh/id_ed25519
         chmod 600 /tmp/.ssh/id_ed25519
         ssh-keyscan github.com >> /tmp/.ssh/known_hosts
         export GIT_SSH_COMMAND="ssh -i /tmp/.ssh/id_ed25519 -o UserKnownHostsFile=/tmp/.ssh/known_hosts"
 
-        # Clone fresh copy
         rm -rf /tmp/gitops-repo
         git clone git@github.com:janasajal/devops-project-gitops.git /tmp/gitops-repo
         cd /tmp/gitops-repo
 
-        # Update image tag
-        sed -i "s|tag: .*|tag: \"$(params.IMAGE_TAG)\"|" helm/gitops-app/values.yaml
-        cat helm/gitops-app/values.yaml
+        # Update image tag for the specific environment
+        sed -i "s|tag: .*|tag: \"$(params.IMAGE_TAG)\"|" helm/$(params.ENVIRONMENT)/values.yaml
+        cat helm/$(params.ENVIRONMENT)/values.yaml
 
-        # Push changes
         git config user.email "tekton@gitops.com"
         git config user.name "Tekton Pipeline"
-        git add helm/gitops-app/values.yaml
-        git commit -m "Update image tag to $(params.IMAGE_TAG)"
+        git add helm/$(params.ENVIRONMENT)/values.yaml
+        git commit -m "$(params.ENVIRONMENT): Update image tag to $(params.IMAGE_TAG)"
         git push git@github.com:janasajal/devops-project-gitops.git main
-        echo "✅ Helm values updated and pushed"
+        echo "✅ $(params.ENVIRONMENT) deployment triggered"
       volumeMounts:
         - name: ssh-key
           mountPath: /ssh-key
