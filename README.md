@@ -22,6 +22,7 @@
 14. [Troubleshooting](#troubleshooting)
 
 ---
+<img width="2150" height="782" alt="image" src="https://github.com/user-attachments/assets/468b2237-b7de-4198-a343-bdd4a838c102" />
 
 ## 🗺️ Architecture Overview
 
