@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: janasajal/gitops-app
-  tag: "latest"
+  tag: "v1.0.0"
   pullPolicy: Always
 
 service:
