@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: sonarqube-scan
+  namespace: tekton-pipelines
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: sonar-scan
+      image: maven:3.9.5-eclipse-temurin-17
+      workingDir: $(workspaces.source.path)/app
+      script: |
+        mvn sonar:sonar \
+          -Dsonar.projectKey=gitops-app \
+          -Dsonar.projectName=gitops-app \
+          -Dsonar.host.url=http://sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+          -Dsonar.login=sqa_fa97bd7f17e5a6cb5f68addfdc2ee57796f601a5
+        echo "✅ SonarQube scan complete"

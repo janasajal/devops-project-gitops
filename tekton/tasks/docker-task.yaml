@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: docker-build-push
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: IMAGE_TAG
+      type: string
+  workspaces:
+    - name: source
+    - name: dockerconfig
+      mountPath: /kaniko/.docker
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:latest
+      workingDir: $(workspaces.source.path)/app
+      args:
+        - "--dockerfile=Dockerfile"
+        - "--context=$(workspaces.source.path)/app"
+        - "--destination=janasajal/gitops-app:$(params.IMAGE_TAG)"
+        - "--destination=janasajal/gitops-app:latest"
+        - "--insecure"
+        - "--skip-tls-verify"

@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: maven-build
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: IMAGE_TAG
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: clone
+      image: alpine/git
+      workingDir: $(workspaces.source.path)
+      script: |
+        git clone https://github.com/janasajal/devops-project-gitops.git .
+        echo "✅ Repo cloned successfully"
+
+    - name: maven-build
+      image: maven:3.9.5-eclipse-temurin-17
+      workingDir: $(workspaces.source.path)/app
+      script: |
+        mvn clean package -DskipTests
+        echo "✅ Maven build successful"

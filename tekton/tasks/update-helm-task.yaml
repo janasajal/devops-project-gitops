@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: update-helm-values
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: IMAGE_TAG
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: update-values
+      image: alpine/git
+      workingDir: $(workspaces.source.path)
+      script: |
+        git clone https://github.com/janasajal/devops-project-gitops.git .
+        sed -i "s|tag: .*|tag: \"$(params.IMAGE_TAG)\"|" helm/gitops-app/values.yaml
+        git config user.email "tekton@gitops.com"
+        git config user.name "Tekton Pipeline"
+        git add helm/gitops-app/values.yaml
+        git commit -m "Update image tag to $(params.IMAGE_TAG)"
+        git push https://$(GITHUB_TOKEN)@github.com/janasajal/devops-project-gitops.git main
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-secret
+              key: token

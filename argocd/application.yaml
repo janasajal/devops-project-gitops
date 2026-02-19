@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/janasajal/devops-project-gitops.git
+    targetRevision: main
+    path: helm/gitops-app
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

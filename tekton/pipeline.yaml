@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: gitops-pipeline
+  namespace: tekton-pipelines
+spec:
+  params:
+    - name: IMAGE_TAG
+      type: string
+      default: "latest"
+  workspaces:
+    - name: shared-workspace
+    - name: dockerconfig
+  tasks:
+    - name: maven-build
+      taskRef:
+        name: maven-build
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)
+
+    - name: sonarqube-scan
+      taskRef:
+        name: sonarqube-scan
+      runAfter:
+        - maven-build
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: docker-build-push
+      taskRef:
+        name: docker-build-push
+      runAfter:
+        - sonarqube-scan
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+        - name: dockerconfig
+          workspace: dockerconfig
+      params:
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)
+
+    - name: update-helm-values
+      taskRef:
+        name: update-helm-values
+      runAfter:
+        - docker-build-push
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE_TAG
+          value: $(params.IMAGE_TAG)

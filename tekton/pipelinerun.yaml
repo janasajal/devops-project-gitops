@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: gitops-pipeline-run-
+  namespace: tekton-pipelines
+spec:
+  pipelineRef:
+    name: gitops-pipeline
+  params:
+    - name: IMAGE_TAG
+      value: "v1.0.0"
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: dockerconfig
+      secret:
+        secretName: dockerhub-secret
