@@ -1,6 +1,7 @@
 # 🚀 End-to-End GitOps CI/CD Pipeline
 
 > **Stack:** GitHub → Tekton → Maven → SonarQube → Docker → Docker Hub → ArgoCD → Minikube (Helm)
+# **Author:** Sajal Jana
 
 ---
 
